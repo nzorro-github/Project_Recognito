@@ -56,7 +56,7 @@ print('### Utility to Upload files to S3: ###\n')
 
 # getting the list of files to choose from the local computer
 path = '/Users/Nzorro/Pictures/S3Uploads/'
-output = subprocess.run(['ls',path],stdout=subprocess.PIPE, text='Yes').stdout.split('\n')
+output = subprocess.run(['ls',path],stdout=subprocess.PIPE, text=True).stdout.split('\n')
 
 # the bucket where the uploads are going to
 bucket_name = 'nz-images-bucket'
