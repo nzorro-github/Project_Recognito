@@ -12,5 +12,12 @@ def detect_labels(bucket,photo):
 
     return result
 
+#convert result to dataframe, just in case
+df=pd.DataFrame.from_dict(result, orient='index',columns=['Confidence'])
+print('--------------------------------------')
+print('Detected labels for: ',photo)
+print('--------------------------------------')
+print(df)
+
 
     
