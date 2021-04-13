@@ -40,12 +40,12 @@ def lambda_handler(event, context):
         labels = detect_labels(bucket, key)
 
         
-        for l in labels:
+        for label in labels:
             item = {}
-            print("Label:", l)
+            print("Label:", label)
             
-            item['Label'] =  l
-            item['Confidence'] = str(labels[l])
+            item['Label'] =  label
+            item['Confidence'] = str(labels[label])
             item['Image'] = bucket+"/"+key
             
             table.put_item(
