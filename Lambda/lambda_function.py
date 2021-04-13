@@ -10,51 +10,47 @@ s3 = boto3.client('s3')
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-def detect_labels(photo, bucket):
+def detect_labels(bucket,photo):
+    
+    rekog =boto3.client('rekognition')
+    response = rekog.detect_labels(Image = {'S3Object' : {'Bucket': bucket, 'Name': photo}},MinConfidence=80,MaxLabels=3)
 
-    client=boto3.client('rekognition')
+    #keep labels in dictionary
+    result={}
+    for labels in response['Labels']:
+        result.update({labels['Name']:round(labels['Confidence'],2)})
+    print('Detected labels for ',photo, result)
 
-    response = client.detect_labels(Image={'S3Object':{'Bucket':bucket,'Name':photo}},
-        MaxLabels=3)
+    return result
 
-    print('Detected labels for ' + photo) 
-    print()   
-    for label in response['Labels']:
-        print ("Label: " + label['Name'])
-        print ("Confidence: " + str(label['Confidence']))
-        print ("Instances:")
-        for instance in label['Instances']:
-            print ("  Bounding box")
-            print ("    Top: " + str(instance['BoundingBox']['Top']))
-            print ("    Left: " + str(instance['BoundingBox']['Left']))
-            print ("    Width: " +  str(instance['BoundingBox']['Width']))
-            print ("    Height: " +  str(instance['BoundingBox']['Height']))
-            print ("  Confidence: " + str(instance['Confidence']))
-            print()
-
-        print ("Parents:")
-        for parent in label['Parents']:
-            print ("   " + parent['Name'])
-        print ("----------")
-        print ()
-    return len(response['Labels']) 
     
     
 def lambda_handler(event, context):
-    #print("Received event: " + json.dumps(event, indent=2))
 
     # Get the object from the event and show its content type
     bucket = event['Records'][0]['s3']['bucket']['name']
     key = urllib.parse.unquote_plus(event['Records'][0]['s3']['object']['key'], encoding='utf-8')
     
-    logger.info(f'Upload notified of {key} on bucket:{bucket}')
+    dyndb = boto3.resource('dynamodb')
+    
+    table = dyndb.Table('ImageLabels')
 
     try:
-        #response = s3.get_object(Bucket=bucket, Key=key)
-        #print("CONTENT TYPE: " + response['ContentType'])
-        #return response['ContentType']
         
-        return detect_labels(key, bucket)
+        labels = detect_labels(bucket, key)
+
+        
+        for l in labels:
+            item = {}
+            print("Label:", l)
+            
+            item['Label'] =  l
+            item['Confidence'] = str(labels[l])
+            item['Image'] = bucket+"/"+key
+            
+            table.put_item(
+                Item=item
+            )
         
     except Exception as e:
         print(e)
